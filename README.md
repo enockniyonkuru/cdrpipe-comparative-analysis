@@ -1,285 +1,343 @@
 # CDRPipe Comparative Analysis
 
-Comparative analyses and manuscript figures for the CDRPipe drug repurposing platform evaluation.
+This repository contains the manuscript-specific comparative analyses and figure-generation code for the CDRPipe platform evaluation. It was split out of the main CDRPipe repository so the package/application code and the manuscript reproduction workflow can evolve independently.
+
+Original package repository: https://github.com/enockniyonkuru/drug_repurposing
+
+Manuscript analysis repository: https://github.com/enockniyonkuru/cdrpipe-comparative-analysis
 
 ---
 
-## Conceptual Overview
+## What Lives Where
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        CDRPipe Comparative Analysis                 │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────┐  │
-│  │ DRUG SIGNATURES │  │  DRUG EVIDENCE  │  │  DISEASE PROCESSING │  │
-│  ├─────────────────┤  ├─────────────────┤  ├─────────────────────┤  │
-│  │ • Extraction    │  │ • Extraction    │  │ • CREEDS (233)      │  │
-│  │ • Processing    │  │ • Processing    │  │ • Autoimmune (20)   │  │
-│  │ • Visuals       │  │ • Visuals       │  │ • Endometriosis(19) │  │
-│  └─────────────────┘  └─────────────────┘  └─────────────────────┘  │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+Use this repository for manuscript case studies, batch analyses, curated analysis tables, and figure generation. Use `drug_repurposing` for the core R package, Shiny app, general pipeline scripts, and package documentation.
+
+| Repository | Purpose |
+|------------|---------|
+| `drug_repurposing` | Source for the `CDRPipe` R package and general-purpose pipeline |
+| `cdrpipe-comparative-analysis` | Reproducible manuscript analyses comparing CMap and TAHOE |
+
+This repository imports CDRPipe as a normal R package:
+
+```r
+library(CDRPipe)
 ```
 
----
-
-## 1. Drug Signatures Workflow
-
-Preparation of CMap and TAHOE drug expression signatures for CDRPipe analysis.
-
-```
-Extraction → Processing → Visuals
-```
-
-| Stage | Scripts | Outputs |
-|-------|---------|---------|
-| **Extraction** | `drug_signatures/scripts/extraction/extract_OG_tahoe_part_*.py/.R` | Raw TAHOE matrices from H5 |
-| **Processing** | `drug_signatures/scripts/processing/filter_tahoe_*.py/.R` | `tahoe_signatures.RData`, valid instances |
-| **Visuals** | `drug_signatures/scripts/visualization/generate_platform_comparison.R` | Platform coverage figures |
-
-**Learn more**: [drug_signatures/README.md](drug_signatures/README.md)
----
-
-## 2. Drug Evidence Workflow
-
-Processing of known drug-disease associations from Open Targets for validation.
-
-```
-Extraction → Processing → Visuals
-```
-
-| Stage | Scripts | Outputs |
-|-------|---------|---------|
-| **Extraction** | Manual download from Open Targets | `.parquet` evidence files |
-| **Processing** | `drug_evidence/scripts/processing/processing_known_drugs_data.py` | Curated drug-disease tables |
-| **Visuals** | Used in case study validation figures | Recovery metrics |
-| **Data Location**: |`drug_evidence/data/open_targets/`|
-| **Learn more**: | [drug_evidence/README.md](drug_evidence/README.md)|
----
-
-## 3. Disease Processing Workflows
-
-Three case studies demonstrating CDRPipe on disease gene signatures.
-
-### 3.1 CREEDS Case Study (233 Diseases)
-
-Large-scale benchmarking across 233 human disease signatures from the CREEDS database.
-
-```
-Extraction → Processing → Results → Analysis → Figures
-```
-
-| Stage | Scripts | Outputs |
-|-------|---------|---------|
-| **Extraction** | `creeds/scripts/processing/process_creeds_signatures.py` | One CSV per disease |
-| **Processing** | `creeds/scripts/processing/standardize_creeds_signatures.py` | Standardized signatures |
-| **Results** | `shared/scripts/execute/run_batch_from_config.R` | CDRPipe hit tables |
-| **Analysis** | `creeds/scripts/analysis/*.py` | Concordance, summaries |
-| **Figures** | `creeds/scripts/visualization/*.py/.R` | Manuscript figures |
-
-**Learn more**: [creeds/README.md](creeds/README.md)
-
-### 3.2 Autoimmune Case Study (20 Diseases)
-
-Validation of known drug recovery for 20 autoimmune conditions (derived from CREEDS results).
-
-```
-Extraction (from CREEDS) → Analysis → Figures
-```
-
-| Stage | Scripts | Outputs |
-|-------|---------|---------|
-| **Extraction** | Subset from CREEDS results | `autoimmune/data/figure_inputs/` |
-| **Analysis** | `autoimmune/scripts/analysis/*.py` | Recovery validation tables |
-| **Figures** | `autoimmune/scripts/visualization/*.py` | Case study figures |
-
-**Learn more**: [autoimmune/README.md](autoimmune/README.md)
-
-### 3.3 Endometriosis Case Study (19 Signatures)
-
-Multi-source consensus from three independent endometriosis signature sources.
-
-```
-Extraction (Microarray + Single-Cell + CREEDS) → Processing → Results → Analysis → Figures
-```
-
-| Stage | Scripts | Outputs |
-|-------|---------|--------|
-| **Extraction** | `endometriosis/scripts/processing/*.py` | Raw signatures from 3 sources |
-| **Processing** | Signature standardization | 19-signature canonical panel |
-| **Results** | `shared/scripts/execute/run_batch_from_config.R` | CDRPipe hit tables |
-| **Analysis** | `endometriosis/scripts/analysis/*.py` | Cross-signature analysis |
-| **Figures** | `endometriosis/scripts/visualization/*.R` | Heatmaps, overlap plots |
-
-**Signature Sources**: Microarray (6) • Single-Cell RNA-seq (10) • CREEDS (3)
-
-**Learn more**: [endometriosis/README.md](endometriosis/README.md)
+Install `CDRPipe` from the original repository before running any batch analyses.
 
 ---
 
 ## Repository Structure
 
 ```
-cdrpipe_comparative_analysis/
-│
-├── shared/                            # Shared data & batch runner
-│   ├── gene_id_conversion_table.tsv   # Gene symbol → Entrez ID mapping
-│   ├── shared_drugs_cmap_tahoe.csv    # Drugs present in both platforms
-│   ├── figure_provenance_manifest.csv # Figure input tracking
-│   └── scripts/execute/               # Batch run orchestration
-│
-├── drug_signatures/                   # CMap & TAHOE platforms
-│   ├── data/
-│   │   ├── cmap/                      # CMap signatures + metadata
-│   │   └── tahoe/                     # TAHOE signatures + metadata
-│   ├── scripts/                       # Extraction, processing, visualization
-│   └── figures/                       # Platform comparison figures
-│
-├── drug_evidence/                     # Known drug-disease associations
-│   ├── data/open_targets/             # Open Targets evidence tables
-│   └── scripts/                       # Evidence processing
-│
-├── creeds/                            # CREEDS 233-disease case study
-│   ├── data/
-│   │   ├── raw_creeds_exports/
-│   │   ├── manual_signatures_extracted/
-│   │   └── manual_signatures_standardized/
-│   ├── scripts/
-│   │   ├── processing/
-│   │   ├── execute/
-│   │   ├── analysis/
-│   │   └── visualization/
-│   ├── results/
-│   ├── analysis/
-│   └── figures/
-│
-├── autoimmune/                        # Autoimmune 20-disease case study
+cdrpipe-comparative-analysis/
+├── shared/                            # Shared inputs, provenance, and batch runners
+│   ├── gene_id_conversion_table.tsv
+│   ├── shared_drugs_cmap_tahoe.csv
+│   ├── figure_provenance_manifest.csv
+│   └── scripts/execute/
+├── drug_signatures/                   # CMap and TAHOE preparation/visualization
 │   ├── data/
 │   ├── scripts/
-│   │   ├── execute/
-│   │   ├── analysis/
-│   │   └── visualization/
-│   ├── results/
-│   ├── analysis/
 │   └── figures/
-│
-├── endometriosis/                     # Endometriosis 19-signature case study
-│   ├── data/
-│   │   ├── microarray_raw/            # 6 raw microarray signatures
-│   │   ├── microarray_processed/      # 6 processed microarray signatures
-│   │   ├── microarray_strict_filtered/# 6 strict-filtered (|logFC|>1.1)
-│   │   ├── single_cell_signatures_raw/
-│   │   ├── standardized_creeds/       # 3 CREEDS QC-filtered
-│   │   ├── standardized_microarray/   # 6 microarray QC-filtered
-│   │   └── standardized_single_cell/  # 10 single-cell QC-filtered
-│   ├── scripts/
-│   │   ├── processing/
-│   │   ├── execute/
-│   │   ├── analysis/
-│   │   └── visualization/
-│   ├── results/
-│   │   ├── single_cell/               # Experiment 1 (default CDRPipe)
-│   │   ├── creeds/                    # Experiment 1 (not yet generated)
-│   │   └── microarray/                # Experiment 2 (Oskotsky replication)
-│   ├── analysis/
-│   └── figures/
-│
-└── dump/                              # Archived legacy scripts
+├── drug_evidence/                     # Known drug-disease evidence processing
+├── creeds/                            # CREEDS 233-disease manuscript analysis
+├── autoimmune/                        # Autoimmune known-drug recovery case study
+└── endometriosis/                     # Endometriosis 19-signature case study
+```
+
+Study-specific documentation:
+
+| Study | README | Main configs |
+|-------|--------|--------------|
+| CREEDS | [creeds/README.md](creeds/README.md) | `creeds/scripts/execute/creeds_manual_config_all_avg.yml` |
+| Autoimmune | [autoimmune/README.md](autoimmune/README.md) | `autoimmune/scripts/execute/autoimmune_batch_config.yml` |
+| Endometriosis | [endometriosis/README.md](endometriosis/README.md) | `endometriosis/scripts/execute/*.yml` |
+| Drug signatures | [drug_signatures/README.md](drug_signatures/README.md) | `drug_signatures/scripts/` |
+| Drug evidence | [drug_evidence/README.md](drug_evidence/README.md) | `drug_evidence/scripts/` |
+| Shared runners | [shared/scripts/README.md](shared/scripts/README.md) | `shared/scripts/execute/` |
+
+---
+
+## Fresh Setup From Scratch
+
+The cleanest setup is to clone the manuscript repository and the original package repository side by side.
+
+```bash
+mkdir cdrpipe-reproduction
+cd cdrpipe-reproduction
+
+git clone https://github.com/enockniyonkuru/drug_repurposing.git
+git clone https://github.com/enockniyonkuru/cdrpipe-comparative-analysis.git
+
+cd cdrpipe-comparative-analysis
+```
+
+### 1. Install R Dependencies
+
+Install `CDRPipe` from the original repository:
+
+```bash
+Rscript -e 'install.packages("devtools", repos = "https://cloud.r-project.org")'
+Rscript -e 'devtools::install("../drug_repurposing/CDRPipe")'
+```
+
+Install additional R packages used by the manuscript scripts:
+
+```bash
+Rscript -e 'pkgs <- c("argparse", "yaml", "dplyr", "tidyr", "readxl", "ggplot2", "gridExtra", "cowplot", "patchwork", "arrow", "VennDiagram", "DiagrammeR", "DiagrammeRsvg", "rsvg", "gplots", "jsonlite", "UpSetR", "tidyverse"); missing <- setdiff(pkgs, rownames(installed.packages())); if (length(missing)) install.packages(missing, repos = "https://cloud.r-project.org")'
+```
+
+Verify that CDRPipe imports successfully:
+
+```bash
+Rscript -e 'library(CDRPipe); cat("CDRPipe loaded from:", find.package("CDRPipe"), "\n")'
+```
+
+You should see a package path and no error.
+
+### 2. Install Python Dependencies
+
+Use a local virtual environment for Python analysis and figure scripts:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install pandas numpy scipy pyarrow h5py matplotlib seaborn adjustText openpyxl
+```
+
+### 3. Add Large Data Files
+
+Large drug-signature matrices are not stored in GitHub. Download the required files from the same data release used by the main repository:
+
+Box data folder: https://ucsf.box.com/s/m54ipylmdytjsqmlp7axnabvjh2q8lwl
+
+For CMap analyses, place:
+
+```text
+drug_signatures/data/cmap/cmap_signatures.RData
+drug_signatures/data/cmap/cmap_drug_experiments_new.csv
+drug_signatures/data/cmap/cmap_valid_instances_OG_015.csv
+```
+
+For TAHOE analyses, place or generate:
+
+```text
+drug_signatures/data/tahoe/tahoe_signatures.RData
+drug_signatures/data/tahoe/tahoe_drug_experiments_new.csv
+drug_signatures/data/tahoe/tahoe_valid_instances_OG_035.csv
+```
+
+If the Tahoe release provides `tahoe_signatures.parquet` instead of `tahoe_signatures.RData`, download `convert_parquet_to_rdata.R` from Box and run:
+
+```bash
+cd drug_signatures/data/tahoe
+Rscript convert_parquet_to_rdata.R tahoe_signatures.parquet -o tahoe_signatures.RData --object-name tahoe_signatures --force
+cd ../../..
+```
+
+Some figure scripts also expect Open Targets evidence at:
+
+```text
+drug_evidence/data/open_targets/known_drug_info_data.parquet
+```
+
+### 4. Create Legacy Data Path Links
+
+Several manuscript scripts were written before this repository was split out and expect shared data under a local `data/` entry point. Create symlinks after downloading the large files:
+
+```bash
+mkdir -p data
+ln -sfn ../drug_signatures/data data/drug_signatures
+ln -sfn ../drug_evidence/data data/drug_evidence
+ln -sfn ../shared/gene_id_conversion_table.tsv data/gene_id_conversion_table.tsv
+
+for study in creeds autoimmune endometriosis; do
+  mkdir -p "$study/data"
+  ln -sfn ../../drug_signatures/data "$study/data/drug_signatures"
+  ln -sfn ../../shared/gene_id_conversion_table.tsv "$study/data/gene_id_conversion_table.tsv"
+done
+```
+
+These links are local setup helpers only. Do not commit them.
+
+### 5. Verify Data Files
+
+From the repository root:
+
+```bash
+Rscript -e 'e <- new.env(); load("drug_signatures/data/cmap/cmap_signatures.RData", envir=e); obj <- get(ls(e)[1], envir=e); cat("CMap:", class(obj), paste(dim(obj), collapse=" x "), "\n")'
+
+Rscript -e 'e <- new.env(); load("drug_signatures/data/tahoe/tahoe_signatures.RData", envir=e); obj <- get(ls(e)[1], envir=e); cat("TAHOE:", class(obj), paste(dim(obj), collapse=" x "), "\n"); print(head(obj[, 1:10]))'
+```
+
+The Tahoe preview should show numeric entries, not all `NA`.
+
+---
+
+## Reproducing the Manuscript Workflow
+
+There are two levels of reproduction:
+
+| Level | Goal | Inputs required |
+|-------|------|-----------------|
+| Figure-only regeneration | Recreate manuscript figures from committed or curated analysis tables | Figure input tables plus plotting dependencies |
+| Full end-to-end rerun | Recompute CDRPipe results, analysis tables, and figures | Large CMap/TAHOE matrices, Open Targets evidence, CDRPipe package, and longer runtime |
+
+The figure provenance file is:
+
+```text
+shared/figure_provenance_manifest.csv
+```
+
+Use it to trace each figure family to its generator script and required direct inputs.
+
+---
+
+## Full End-to-End Rerun
+
+Run these commands from the `cdrpipe-comparative-analysis` repository root after completing setup.
+
+### 1. CREEDS 233-Disease Batch
+
+```bash
+Rscript shared/scripts/execute/run_batch_from_config.R \
+  --config_file creeds/scripts/execute/creeds_manual_config_all_avg.yml
+```
+
+This writes CDRPipe outputs to:
+
+```text
+creeds/results/manual_standardized_all_diseases_results/
+creeds/analysis/manual_standardized_all_diseases_analysis/
+```
+
+### 2. Autoimmune Batch
+
+```bash
+Rscript shared/scripts/execute/run_batch_from_config.R \
+  --config_file autoimmune/scripts/execute/autoimmune_batch_config.yml
+```
+
+This writes outputs to the autoimmune results and analysis directories defined in the config.
+
+### 3. Endometriosis Batches
+
+```bash
+Rscript shared/scripts/execute/run_batch_from_config.R \
+  --config_file endometriosis/scripts/execute/single_cell_batch_config.yml
+
+Rscript shared/scripts/execute/run_batch_from_config.R \
+  --config_file endometriosis/scripts/execute/microarray_strict_config.yml
+
+Rscript shared/scripts/execute/run_batch_from_config.R \
+  --config_file endometriosis/scripts/execute/all_19_signatures_config.yml
+```
+
+These runs can be long, especially for TAHOE. For smoke testing, edit the relevant config to process a small disease range with `start_from_disease` and `end_at_disease`.
+
+---
+
+## Regenerating Figures
+
+Run these after the required input tables exist. Some inputs are committed in this repository; others are produced by the batch and analysis steps above. If a script reports a missing file, check `shared/figure_provenance_manifest.csv` for the expected input.
+
+### Platform Comparison Figures
+
+```bash
+Rscript drug_signatures/scripts/visualization/generate_platform_comparison.R
+```
+
+Primary outputs:
+
+```text
+figures/platform_comparison/
+```
+
+Tracked manuscript copies are stored under:
+
+```text
+drug_signatures/figures/platform_comparison/
+```
+
+### CREEDS Figures
+
+```bash
+Rscript creeds/scripts/visualization/plot_disease_signature_filtering.R
+Rscript creeds/scripts/visualization/plot_analysis_across_diseases.R
+python creeds/scripts/visualization/plot_drug_class_distributions.py
+python creeds/scripts/visualization/plot_biological_concordance.py
+python creeds/scripts/visualization/plot_concordance_metrics.py
+```
+
+Primary outputs:
+
+```text
+creeds/figures/
+```
+
+### Autoimmune Figures
+
+```bash
+python autoimmune/scripts/visualization/generate_case_study_autoimmune.py
+python autoimmune/scripts/visualization/create_drug_consistency_figures.py
+python autoimmune/scripts/visualization/create_separate_panels.py
+```
+
+Primary outputs:
+
+```text
+autoimmune/figures/
+```
+
+### Endometriosis Figures
+
+```bash
+Rscript endometriosis/scripts/visualization/generate_case_study_endometriosis.R
+python endometriosis/scripts/visualization/plot_disease_signature_info.py
+Rscript endometriosis/scripts/analysis/generate_upset_plots.R
+Rscript endometriosis/scripts/analysis/plot_drug_overlaps_upset_v2.R
+```
+
+Primary outputs:
+
+```text
+endometriosis/figures/
+endometriosis/analysis/
 ```
 
 ---
 
-## Reproduction Guide
+## Important Reproducibility Notes
 
-### Prerequisites
-
-1. **CDRPipe R Package**
-   ```r
-   devtools::install("../CDRPipe")
-   ```
-
-2. **Python Environment** (3.8+)
-   ```bash
-   pip install pandas numpy pyarrow h5py matplotlib seaborn
-   ```
-
-3. **Large Data Files**: See [Data Availability](#data-availability)
-
-### Quick Start: Run by Workflow
-
-```bash
-# ─── Drug Signatures ───
-# Generate TAHOE signatures from H5 (if raw data available)
-python drug_signatures/scripts/extraction/extract_OG_tahoe_part_1.py
-python drug_signatures/scripts/extraction/extract_OG_tahoe_part_2_rank_and_save_parquet.py
-Rscript drug_signatures/scripts/extraction/extract_OG_tahoe_part_3_convert_to_rdata.R
-
-# ─── CREEDS Case Study ───
-Rscript shared/scripts/execute/run_batch_from_config.R \
-  --config_file creeds/scripts/execute/creeds_manual_config_all_avg.yml
-
-# ─── Autoimmune Case Study ───
-Rscript shared/scripts/execute/run_batch_from_config.R \
-  --config_file autoimmune/scripts/execute/case_study_v2.yml
-
-# ─── Endometriosis Case Study ───
-# Experiment 1: Single-cell (default CDRPipe)
-Rscript shared/scripts/execute/run_batch_from_config.R \
-  --config_file endometriosis/scripts/execute/single_cell_batch_config.yml
-# Experiment 2: Microarray replication (Oskotsky et al.)
-Rscript shared/scripts/execute/run_batch_from_config.R \
-  --config_file endometriosis/scripts/execute/microarray_strict_config.yml
-```
+- Run commands from the repository root unless a study-specific README says otherwise.
+- Keep `drug_repurposing` and `cdrpipe-comparative-analysis` as sibling directories if using the local CDRPipe install command above.
+- Large `.RData`, `.rds`, and `.parquet` files are intentionally not tracked in GitHub.
+- The batch configs use local relative paths; the symlink setup above keeps legacy paths working after the repository split.
+- TAHOE runs are much heavier than CMap runs and may require substantial memory and runtime.
+- Existing committed figures are manuscript outputs; rerunning scripts may overwrite them locally.
 
 ---
 
 ## Data Availability
 
-### Primary Data Sources
+| Data | Expected location | Notes |
+|------|-------------------|-------|
+| CMap signature matrix | `drug_signatures/data/cmap/cmap_signatures.RData` | Download from Box data release |
+| CMap metadata | `drug_signatures/data/cmap/cmap_drug_experiments_new.csv` | Included or downloadable from Box |
+| TAHOE signature matrix | `drug_signatures/data/tahoe/tahoe_signatures.RData` | Generate from Tahoe parquet if needed |
+| TAHOE metadata | `drug_signatures/data/tahoe/tahoe_drug_experiments_new.csv` | Included or downloadable from Box |
+| Open Targets evidence | `drug_evidence/data/open_targets/known_drug_info_data.parquet` | Download from Open Targets or project data release |
+| Gene mapping | `shared/gene_id_conversion_table.tsv` | Included in this repository |
+| Disease signatures | `creeds/data/`, `autoimmune/data/`, `endometriosis/data/` | Included where small enough for GitHub |
 
-| Platform | Download | Reference |
-|----------|----------|-----------|
-| **CMap** | [Broad Institute Connectivity Map](https://www.broadinstitute.org/connectivity-map-cmap) | Subramanian et al., Cell 2017 |
-| **TAHOE** | [Hugging Face: Tahoe-100M](https://huggingface.co/datasets/tahoebio/Tahoe-100M) | [Preprint (bioRxiv 2025)](https://www.biorxiv.org/content/10.1101/2025.02.20.639398v1) |
-| **Open Targets** | [Open Targets Platform](https://platform.opentargets.org/downloads) | Ochoa et al., NAR 2023 |
+Primary external sources:
 
-### Large Files (Not in Repository)
-
-| File | Location | Source |
-|------|----------|--------|
-| `cmap_signatures.RData` | `drug_signatures/data/cmap/` | CMap (pre-processed) |
-| `tahoe_signatures.RData` | `drug_signatures/data/tahoe/` | Generated via extraction pipeline |
-
-### Included Data
-
-| Data | Location | Description |
-|------|----------|-------------|
-| CMap/TAHOE metadata | `drug_signatures/data/*/` | Drug experiment annotations |
-| Open Targets evidence | `drug_evidence/data/open_targets/` | Known drug-disease associations |
-| Gene mapping | `shared/gene_id_conversion_table.tsv` | Symbol → Entrez conversion |
-| Disease signatures | `creeds/data/`, `endometriosis/data/` | Processed signatures |
-
----
-
-## Figure Provenance
-
-All manuscript figures are tracked in `figures/figure_provenance_manifest.csv`.
-
-| Workflow | Generator | Location |
-|----------|-----------|----------|
-| Drug Signatures | `scripts/visualization/generate_platform_comparison.R` | `figures/platform_comparison/` |
-| CREEDS | `creeds/scripts/visualization/*.py/.R` | `creeds/figures/` |
-| Autoimmune | `autoimmune/scripts/visualization/*.py` | `autoimmune/figures/` |
-| Endometriosis | `endometriosis/scripts/visualization/*.R` | `endometriosis/figures/` |
-
----
-
-## Study-Specific Documentation
-
-| Study | README | Config |
-|-------|--------|--------|
-| **CREEDS** | [creeds/README.md](creeds/README.md) | `creeds/scripts/execute/*.yml` |
-| **Autoimmune** | [autoimmune/README.md](autoimmune/README.md) | `autoimmune/scripts/execute/*.yml` |
-| **Endometriosis** | [endometriosis/README.md](endometriosis/README.md) | `endometriosis/scripts/execute/*.yml` |
-| **Shared Scripts** | [scripts/README.md](scripts/README.md) | — |
+| Source | Link |
+|--------|------|
+| Main CDRPipe repository | https://github.com/enockniyonkuru/drug_repurposing |
+| Box data release | https://ucsf.box.com/s/m54ipylmdytjsqmlp7axnabvjh2q8lwl |
+| CMap | https://www.broadinstitute.org/connectivity-map-cmap |
+| TAHOE | https://huggingface.co/datasets/tahoebio/Tahoe-100M |
+| Open Targets | https://platform.opentargets.org/downloads |
